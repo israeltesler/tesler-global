@@ -3,7 +3,6 @@
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import {
   motion,
-  useMotionValueEvent,
   useReducedMotion,
   useScroll,
   useTransform,
@@ -68,38 +67,6 @@ const MARQUEE_IMAGES = PROJECTS_PAGE_ENABLED
 
 const HERO_LOGO_SCROLL: [number, number] = [0, 0.55];
 const HERO_HEADLINE_SCROLL: [number, number] = [0, 0.85];
-const HERO_WORD_STAGGER_S = 0.13;
-const HERO_WORD_REVEAL_DURATION_S = 0.4;
-
-function useHeroWordsActive(progress: MotionValue<number>): boolean {
-  const [active, setActive] = useState(false);
-
-  useEffect(() => {
-    if (active) return;
-
-    const start = (): void => {
-      setActive(true);
-    };
-
-    window.addEventListener("wheel", start, { passive: true });
-    window.addEventListener("touchmove", start, { passive: true });
-    window.addEventListener("keydown", start, { passive: true });
-
-    return () => {
-      window.removeEventListener("wheel", start);
-      window.removeEventListener("touchmove", start);
-      window.removeEventListener("keydown", start);
-    };
-  }, [active]);
-
-  useMotionValueEvent(progress, "change", (value) => {
-    if (value > 0.004) {
-      setActive(true);
-    }
-  });
-
-  return active;
-}
 
 export function HomeLanding(): ReactNode {
   const reducedMotion = useReducedMotion();
@@ -470,7 +437,10 @@ function HeroRisingHeadline({
     [motionConfig.startY, 0]
   );
   const scale = useTransform(progress, HERO_HEADLINE_SCROLL, [0.24, 1]);
-  const animateWords = useHeroWordsActive(progress);
+  const totalWords = lines.reduce(
+    (count, line) => count + line.split(/\s+/).filter(Boolean).length,
+    0
+  );
   let runningWordIndex = 0;
   const linesWithWordIndices = lines.map((line) => {
     const lineWords = line.split(/\s+/).filter(Boolean);
@@ -504,8 +474,9 @@ function HeroRisingHeadline({
               <HeroAnimatedWord
                 key={`${line}-${wordInLine}-${word}`}
                 word={word}
+                scale={scale}
                 index={index}
-                animateWords={animateWords}
+                total={totalWords}
                 isLastInLine={wordInLine === words.length - 1}
               />
             ))}
@@ -518,26 +489,27 @@ function HeroRisingHeadline({
 
 function HeroAnimatedWord({
   word,
+  scale,
   index,
-  animateWords,
+  total,
   isLastInLine,
 }: {
   word: string;
+  scale: MotionValue<number>;
   index: number;
-  animateWords: boolean;
+  total: number;
   isLastInLine: boolean;
 }): ReactNode {
+  const minScale = 0.24;
+  const maxScale = 1;
+  const range = maxScale - minScale;
+  const start = minScale + (index / total) * range;
+  const end = minScale + ((index + 1) / total) * range;
+  const opacity = useTransform(scale, [start, end], [0, 1], { clamp: true });
+  const y = useTransform(scale, [start, end], [18, 0], { clamp: true });
+
   return (
-    <motion.span
-      className="hero-rising-headline__word"
-      initial={{ opacity: 0, y: 18 }}
-      animate={animateWords ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
-      transition={{
-        duration: HERO_WORD_REVEAL_DURATION_S,
-        delay: index * HERO_WORD_STAGGER_S,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-    >
+    <motion.span style={{ opacity, y }} className="hero-rising-headline__word">
       {word}
       {isLastInLine ? "" : "\u00A0"}
     </motion.span>
@@ -621,38 +593,55 @@ function MarqueeStrip({
 
   return (
     <>
-      <MarqueeRow images={MARQUEE_IMAGES.slice(0, 11)} x={offset - 200} />
+      <MarqueeRow
+        images={MARQUEE_IMAGES.slice(0, 11)}
+        scrollX={offset - 200}
+        reverse={false}
+      />
       <div className="h-3" />
-      <MarqueeRow images={MARQUEE_IMAGES.slice(11)} x={-(offset - 200)} />
+      <MarqueeRow
+        images={MARQUEE_IMAGES.slice(11)}
+        scrollX={-(offset - 200)}
+        reverse
+      />
     </>
   );
 }
 
 function MarqueeRow({
   images,
-  x,
+  scrollX = 0,
+  reverse = false,
 }: {
   images: readonly string[];
-  x: number;
+  scrollX?: number;
+  reverse?: boolean;
 }): ReactNode {
   const repeated = [...images, ...images, ...images];
   return (
     <div
-      className="flex w-max gap-3"
-      style={{ transform: `translate3d(${x}px,0,0)`, willChange: "transform" }}
+      className="marquee-row overflow-hidden"
+      style={{
+        transform: `translate3d(${scrollX}px,0,0)`,
+        willChange: "transform",
+      }}
     >
-      {repeated.map((src, index) => (
-        <img
-          key={`${src}-${index}`}
-          src={src}
-          alt=""
-          width={420}
-          height={270}
-          loading="lazy"
-          decoding="async"
-          className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
-        />
-      ))}
+      <div
+        className={`marquee-row__track flex w-max gap-3${reverse ? " marquee-row__track--reverse" : ""}`}
+      >
+        {repeated.map((src, index) => (
+          <img
+            key={`${src}-${index}`}
+            src={src}
+            alt=""
+            width={420}
+            height={270}
+            loading="lazy"
+            decoding="async"
+            className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
+          />
+        ))}
+      </div>
     </div>
   );
 }

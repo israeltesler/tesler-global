@@ -54,6 +54,10 @@ export function SmoothScroll({
       lenis.raf(data.timestamp);
     }
 
+    lenis.on("scroll", () => {
+      window.dispatchEvent(new Event("scroll"));
+    });
+
     frame.update(updateLenis, true);
 
     function handleAnchorClick(e: MouseEvent): void {
