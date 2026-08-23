@@ -1,14 +1,22 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { useReducedMotion } from "@/lib/motion";
 
-const MIN_HOLD_AFTER_READY = 0;
-const MAX_WAIT = 2500;
-const CURTAIN_DELAY = 0;
-const CURTAIN_DURATION = 500;
+const MIN_WAIT_AFTER_READY_MS = 400;
+const MAX_WAIT_MS = 4500;
+const CURTAIN_DURATION_MS = 650;
+const ANIMATION_FALLBACK_MS = CURTAIN_DURATION_MS + 400;
+const ABSOLUTE_MAX_MS = 7000;
 
 type SplashPhase = "hold" | "rising" | "done";
 
@@ -46,49 +54,64 @@ export function SplashScreen({
 }: SplashScreenProps): ReactNode {
   const reducedMotion = useReducedMotion();
   const onCompleteRef = useRef(onComplete);
-  const canvasReadyAtRef = useRef<number | null>(null);
+  const canvasReadyRef = useRef(canvasReady);
+  const completedRef = useRef(false);
+  const risingRef = useRef(false);
   const [phase, setPhase] = useState<SplashPhase>("hold");
 
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  }, [onComplete]);
+  onCompleteRef.current = onComplete;
+  canvasReadyRef.current = canvasReady;
 
-  useEffect(() => {
-    if (canvasReady && canvasReadyAtRef.current === null) {
-      canvasReadyAtRef.current = performance.now();
-    }
-  }, [canvasReady]);
+  const finish = useCallback((): void => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    delete document.documentElement.dataset.splashActive;
+    unlockPageScroll();
+    onCompleteRef.current();
+  }, []);
 
   useLayoutEffect(() => {
-    if (reducedMotion || phase === "done") {
-      delete document.documentElement.dataset.splashActive;
-      unlockPageScroll();
+    if (reducedMotion) {
+      finish();
       return;
     }
 
     document.documentElement.dataset.splashActive = "";
     lockPageScroll();
-  }, [reducedMotion, phase]);
+
+    return () => {
+      delete document.documentElement.dataset.splashActive;
+      unlockPageScroll();
+    };
+  }, [reducedMotion, finish]);
 
   useEffect(() => {
-    if (reducedMotion) {
-      onCompleteRef.current();
-      return;
-    }
+    if (reducedMotion || completedRef.current) return;
 
-    const start = performance.now();
+    const startedAt = performance.now();
     let frame = 0;
-    let riseTimeout = 0;
+    let animationFallback = 0;
+
+    const beginRise = (): void => {
+      if (risingRef.current || completedRef.current) return;
+      risingRef.current = true;
+      setPhase("rising");
+      animationFallback = window.setTimeout(() => {
+        setPhase("done");
+      }, ANIMATION_FALLBACK_MS);
+    };
 
     const tick = (now: number): void => {
-      const readyAt = canvasReadyAtRef.current;
-      const holdComplete =
-        readyAt !== null && now - readyAt >= MIN_HOLD_AFTER_READY;
-      const timedOut = now - start >= MAX_WAIT;
-      const ready = (canvasReady && holdComplete) || timedOut;
+      if (completedRef.current || risingRef.current) return;
 
-      if (ready) {
-        riseTimeout = window.setTimeout(() => setPhase("rising"), CURTAIN_DELAY);
+      const elapsed = now - startedAt;
+      const canvasIsReady = canvasReadyRef.current;
+      const holdComplete =
+        canvasIsReady && elapsed >= MIN_WAIT_AFTER_READY_MS;
+      const timedOut = elapsed >= MAX_WAIT_MS;
+
+      if (holdComplete || timedOut) {
+        beginRise();
         return;
       }
 
@@ -97,16 +120,23 @@ export function SplashScreen({
 
     frame = requestAnimationFrame(tick);
 
+    const absoluteFallback = window.setTimeout(() => {
+      if (completedRef.current) return;
+      risingRef.current = true;
+      setPhase("done");
+    }, ABSOLUTE_MAX_MS);
+
     return () => {
       cancelAnimationFrame(frame);
-      window.clearTimeout(riseTimeout);
+      window.clearTimeout(animationFallback);
+      window.clearTimeout(absoluteFallback);
     };
-  }, [canvasReady, reducedMotion]);
+  }, [reducedMotion]);
 
   useEffect(() => {
     if (phase !== "done") return;
-    onCompleteRef.current();
-  }, [phase]);
+    finish();
+  }, [phase, finish]);
 
   if (reducedMotion || phase === "done") return null;
 
@@ -119,7 +149,7 @@ export function SplashScreen({
       initial={{ y: 0 }}
       animate={phase === "rising" ? { y: "-100%" } : { y: 0 }}
       transition={{
-        duration: CURTAIN_DURATION / 1000,
+        duration: CURTAIN_DURATION_MS / 1000,
         ease: [0.76, 0, 0.24, 1],
       }}
       onAnimationComplete={() => {

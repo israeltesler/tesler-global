@@ -19,6 +19,34 @@ function lockHeroStableHeight(): void {
   );
 }
 
+function waitForContainerSize(
+  container: HTMLElement,
+  attempts = 120
+): Promise<void> {
+  return new Promise((resolve) => {
+    let remaining = attempts;
+
+    const measure = (): void => {
+      const stage = container.closest(".cinematic-earth-hero__stage") ?? container;
+      const rect = stage.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        resolve();
+        return;
+      }
+
+      remaining -= 1;
+      if (remaining <= 0) {
+        resolve();
+        return;
+      }
+
+      requestAnimationFrame(measure);
+    };
+
+    measure();
+  });
+}
+
 type CinematicEarthEngine = {
   dispose: () => void;
   handleResize: () => void;
@@ -91,8 +119,19 @@ export function CinematicEarthCanvasInner({
     let timeoutId = 0;
     let resizeObserver: ResizeObserver | null = null;
 
-    const boot = async (): Promise<void> => {
+    const notifyReadyOnce = (() => {
+      let notified = false;
+      return (): void => {
+        if (notified || disposed) return;
+        notified = true;
+        onReadyRef.current?.();
+      };
+    })();
+
+    const boot = async (attempt = 0): Promise<void> => {
       try {
+        await waitForContainerSize(container);
+
         timeoutId = window.setTimeout(() => {
           if (!disposed) {
             setErrorMessage(
@@ -101,16 +140,15 @@ export function CinematicEarthCanvasInner({
           }
         }, 35000);
 
-        let readyNotified = false;
-        const notifyReady = (): void => {
-          if (readyNotified || disposed) return;
-          readyNotified = true;
-          setErrorMessage(null);
-          setStatus("ready");
-          onReadyRef.current?.();
-        };
+        const engine = await createHeroEngine(canvas, {
+          onReady: () => {
+            if (disposed) return;
+            setErrorMessage(null);
+            setStatus("ready");
+            notifyReadyOnce();
+          },
+        });
 
-        const engine = await createHeroEngine(canvas, { onReady: notifyReady });
         if (disposed) {
           engine.dispose();
           return;
@@ -122,17 +160,26 @@ export function CinematicEarthCanvasInner({
           reducedMotionRef.current ? 1 : (scrollProgressRef.current?.get() ?? 1)
         );
         engine.handleResize();
-        notifyReady();
+        setErrorMessage(null);
+        setStatus("ready");
+        notifyReadyOnce();
       } catch (error) {
         console.error("Cinematic Earth hero failed to start:", error);
-        if (!disposed) {
-          setStatus("error");
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : "כדור הארץ לא נטען. נסה Chrome/Edge/Safari עדכני."
-          );
+        if (disposed) return;
+
+        if (attempt < 1) {
+          window.clearTimeout(timeoutId);
+          await new Promise((resolve) => window.setTimeout(resolve, 600));
+          return boot(attempt + 1);
         }
+
+        setStatus("error");
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "כדור הארץ לא נטען. נסה Chrome/Edge/Safari עדכני."
+        );
+        notifyReadyOnce();
       } finally {
         window.clearTimeout(timeoutId);
       }

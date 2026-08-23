@@ -19,6 +19,7 @@ import {
   getLogoOrbitVerticalOffset,
   OrbitStudioLogo,
 } from "@/components/brand/orbit-studio-logo";
+import { CinematicEarthCanvas } from "@/components/hero/cinematic-earth-canvas";
 import { CinematicEarthPreload } from "@/components/hero/cinematic-earth-preload";
 import { SplashScreen } from "@/components/layout/splash-screen";
 import {
@@ -28,14 +29,6 @@ import {
   ROMEMA_IMAGE,
 } from "@/lib/projects-data";
 import { siteContent } from "@/lib/site-content";
-
-const CinematicEarthCanvas = dynamic(
-  () =>
-    import("@/components/hero/cinematic-earth-canvas").then((module) => ({
-      default: module.CinematicEarthCanvas,
-    })),
-  { ssr: false }
-);
 
 const ContactForm = dynamic(
   () =>
@@ -127,21 +120,19 @@ export function HomeLanding(): ReactNode {
         onSplashComplete={() => setSplashComplete(true)}
       />
       {splashComplete ? (
-        <>
-          <AboutSection />
-          <MarqueeSection />
-          <ServicesSection />
-          {PROJECTS_PAGE_ENABLED ? <ProjectsSection /> : null}
-          <ProcessSection />
-          <div
-            ref={ctaBetweenGapRef}
-            className="hero-cta-between-zone"
-            aria-hidden="true"
-          />
-          <ContactSection sectionRef={contactSectionRef} />
-          <SiteFooter />
-        </>
+        <MarqueeSection />
       ) : null}
+      <AboutSection />
+      <ServicesSection />
+      {PROJECTS_PAGE_ENABLED ? <ProjectsSection /> : null}
+      <ProcessSection />
+      <div
+        ref={ctaBetweenGapRef}
+        className="hero-cta-between-zone"
+        aria-hidden="true"
+      />
+      <ContactSection sectionRef={contactSectionRef} />
+      <SiteFooter />
       <PersistentHeroCta
         betweenGapRef={ctaBetweenGapRef}
         contactRef={contactSectionRef}
@@ -332,7 +323,7 @@ function HeroSection({
           <CinematicEarthCanvas
             scrollProgress={scrollYProgress}
             reducedMotion={Boolean(reducedMotion)}
-            earthVisible={!splashActive || canvasReady}
+            earthVisible
             onReady={() => setCanvasReady(true)}
           />
 

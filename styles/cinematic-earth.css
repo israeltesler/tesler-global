@@ -29,6 +29,9 @@
   min-height: 0;
   overflow: hidden;
   touch-action: pan-y;
+  background:
+    radial-gradient(circle at 50% 45%, rgb(20 32 48 / 0.55), transparent 58%),
+    var(--cinematic-hero-bg, #0a0a0a);
 }
 
 .cinematic-earth-hero__stage > * {
