@@ -1005,6 +1005,7 @@ body:has(.creator-page) .site-corner {
 
 .marquee-row__track {
   animation: marquee-track 42s linear infinite;
+  animation-play-state: running;
   will-change: transform;
 }
 
@@ -1023,7 +1024,9 @@ body:has(.creator-page) .site-corner {
 
 @media (prefers-reduced-motion: reduce) {
   .marquee-row__track {
-    animation: none;
+    animation: marquee-track 42s linear infinite !important;
+    animation-duration: 42s !important;
+    animation-iteration-count: infinite !important;
   }
 }
 

@@ -61,6 +61,10 @@ export default function RootLayout({
 }>): ReactNode {
   return (
     <html lang="he" dir="rtl" suppressHydrationWarning>
+      <head>
+        <link rel="dns-prefetch" href="https://motionsites.ai" />
+        <link rel="preconnect" href="https://motionsites.ai" crossOrigin="" />
+      </head>
       <body
         className={`${heebo.variable} ${geistMono.variable} ${fraunces.variable} ${kanit.variable} ${rubik.variable} min-h-screen bg-background font-sans text-foreground antialiased`}
       >

@@ -566,7 +566,8 @@ function MarqueeStrip({
 }: {
   sectionRef: RefObject<HTMLElement | null>;
 }): ReactNode {
-  const [offset, setOffset] = useState(0);
+  const rowARef = useRef<HTMLDivElement>(null);
+  const rowBRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let rafId = 0;
@@ -576,7 +577,16 @@ function MarqueeStrip({
       if (section) {
         const sectionTop =
           section.getBoundingClientRect().top + window.scrollY;
-        setOffset((window.scrollY - sectionTop + window.innerHeight) * 0.3);
+        const offset = (window.scrollY - sectionTop + window.innerHeight) * 0.3;
+        const parallaxA = offset - 200;
+        const parallaxB = -(offset - 200);
+
+        if (rowARef.current) {
+          rowARef.current.style.transform = `translate3d(${parallaxA}px,0,0)`;
+        }
+        if (rowBRef.current) {
+          rowBRef.current.style.transform = `translate3d(${parallaxB}px,0,0)`;
+        }
       }
       rafId = requestAnimationFrame(update);
     };
@@ -588,14 +598,14 @@ function MarqueeStrip({
   return (
     <>
       <MarqueeRow
+        parallaxRef={rowARef}
         images={MARQUEE_IMAGES.slice(0, 11)}
-        scrollX={offset - 200}
         reverse={false}
       />
       <div className="h-3" />
       <MarqueeRow
+        parallaxRef={rowBRef}
         images={MARQUEE_IMAGES.slice(11)}
-        scrollX={-(offset - 200)}
         reverse
       />
     </>
@@ -604,37 +614,38 @@ function MarqueeStrip({
 
 function MarqueeRow({
   images,
-  scrollX = 0,
+  parallaxRef,
   reverse = false,
 }: {
   images: readonly string[];
-  scrollX?: number;
+  parallaxRef: RefObject<HTMLDivElement | null>;
   reverse?: boolean;
 }): ReactNode {
   const repeated = [...images, ...images, ...images];
   return (
-    <div
-      className="marquee-row overflow-hidden"
-      style={{
-        transform: `translate3d(${scrollX}px,0,0)`,
-        willChange: "transform",
-      }}
-    >
+    <div className="marquee-row overflow-hidden">
       <div
-        className={`marquee-row__track flex w-max gap-3${reverse ? " marquee-row__track--reverse" : ""}`}
+        ref={parallaxRef}
+        className="marquee-row__parallax"
+        style={{ willChange: "transform" }}
       >
-        {repeated.map((src, index) => (
-          <img
-            key={`${src}-${index}`}
-            src={src}
-            alt=""
-            width={420}
-            height={270}
-            loading="lazy"
-            decoding="async"
-            className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
-          />
-        ))}
+        <div
+          className={`marquee-row__track flex w-max gap-3${reverse ? " marquee-row__track--reverse" : ""}`}
+        >
+          {repeated.map((src, index) => (
+            <img
+              key={`${src}-${index}`}
+              src={src}
+              alt=""
+              width={420}
+              height={270}
+              loading={index < 4 ? "eager" : "lazy"}
+              decoding="async"
+              fetchPriority={index < 2 ? "high" : undefined}
+              className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
