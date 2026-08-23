@@ -1,0 +1,23 @@
+{
+  "name": "tesler studio",
+  "short_name": "tesler studio",
+  "description": "סטודיו בוטיק לעיצוב ופיתוח Web — המותג שלך, ב-Web.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1A1D21",
+  "theme_color": "#1A1D21",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/orbit-studio-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
