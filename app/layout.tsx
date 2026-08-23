@@ -31,14 +31,14 @@ const fraunces = Fraunces({
 const kanit = Kanit({
   variable: "--font-kanit",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  weight: ["300", "400", "500", "700", "800", "900"],
   display: "swap",
 });
 
 const rubik = Rubik({
   variable: "--font-rubik",
   subsets: ["hebrew", "latin"],
-  weight: ["500", "600", "700", "800", "900"],
+  weight: ["700", "800", "900"],
   display: "swap",
 });
 
@@ -62,6 +62,12 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" suppressHydrationWarning>
       <head>
+        <link
+          rel="preload"
+          href="/cinematic-earth/8k_earth_daymap.jpg"
+          as="image"
+          fetchPriority="high"
+        />
         <link rel="dns-prefetch" href="https://motionsites.ai" />
         <link rel="preconnect" href="https://motionsites.ai" crossOrigin="" />
       </head>

@@ -7,7 +7,10 @@ export type CinematicEarthEngine = {
 
 export type CreateHeroEngine = (
   canvas: HTMLCanvasElement,
-  options?: { onProgress?: (message: string) => void }
+  options?: {
+    onProgress?: (message: string) => void;
+    onReady?: () => void;
+  }
 ) => Promise<CinematicEarthEngine>;
 
 declare module "@/lib/cinematic-earth/engine.js" {

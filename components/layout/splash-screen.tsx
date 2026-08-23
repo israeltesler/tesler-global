@@ -6,9 +6,9 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { useReducedMotion } from "@/lib/motion";
 
 const MIN_HOLD_AFTER_READY = 0;
-const MAX_WAIT = 5500;
+const MAX_WAIT = 4000;
 const CURTAIN_DELAY = 0;
-const CURTAIN_DURATION = 1100;
+const CURTAIN_DURATION = 800;
 
 type SplashPhase = "hold" | "rising" | "done";
 

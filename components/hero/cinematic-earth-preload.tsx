@@ -2,12 +2,10 @@
 
 import { useEffect, type ReactNode } from "react";
 
-const CRITICAL_TEXTURES = [
-  "/cinematic-earth/8k_earth_daymap.jpg",
-  "/cinematic-earth/8k_earth_normal_map.jpg",
-] as const;
+const CRITICAL_TEXTURE = "/cinematic-earth/8k_earth_daymap.jpg";
 
 const DEFERRED_TEXTURES = [
+  "/cinematic-earth/8k_earth_normal_map.jpg",
   "/cinematic-earth/8k_earth_nightmap.jpg",
   "/cinematic-earth/8k_earth_specular_map.jpg",
   "/cinematic-earth/8k_earth_clouds.jpg",
@@ -28,19 +26,28 @@ function preloadTexture(href: string, priority: "high" | "low"): void {
   document.head.appendChild(link);
 }
 
+function scheduleIdle(task: () => void): void {
+  const idleCallback = window.requestIdleCallback;
+  if (typeof idleCallback === "function") {
+    idleCallback(task, { timeout: 1200 });
+    return;
+  }
+  window.setTimeout(task, 0);
+}
+
 export function CinematicEarthPreload(): ReactNode {
   useEffect(() => {
-    void import("@/lib/cinematic-earth/engine.js");
+    preloadTexture(CRITICAL_TEXTURE, "high");
 
-    for (const href of CRITICAL_TEXTURES) {
-      preloadTexture(href, "high");
-    }
+    scheduleIdle(() => {
+      void import("@/lib/cinematic-earth/engine.js");
+    });
 
     const deferId = window.setTimeout(() => {
       for (const href of DEFERRED_TEXTURES) {
         preloadTexture(href, "low");
       }
-    }, 1500);
+    }, 2500);
 
     return () => window.clearTimeout(deferId);
   }, []);

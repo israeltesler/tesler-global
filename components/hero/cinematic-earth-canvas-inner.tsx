@@ -101,7 +101,16 @@ export function CinematicEarthCanvasInner({
           }
         }, 35000);
 
-        const engine = await createHeroEngine(canvas);
+        let readyNotified = false;
+        const notifyReady = (): void => {
+          if (readyNotified || disposed) return;
+          readyNotified = true;
+          setErrorMessage(null);
+          setStatus("ready");
+          onReadyRef.current?.();
+        };
+
+        const engine = await createHeroEngine(canvas, { onReady: notifyReady });
         if (disposed) {
           engine.dispose();
           return;
@@ -113,10 +122,7 @@ export function CinematicEarthCanvasInner({
           reducedMotionRef.current ? 1 : (scrollProgressRef.current?.get() ?? 1)
         );
         engine.handleResize();
-
-        setErrorMessage(null);
-        setStatus("ready");
-        onReadyRef.current?.();
+        notifyReady();
       } catch (error) {
         console.error("Cinematic Earth hero failed to start:", error);
         if (!disposed) {

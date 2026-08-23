@@ -9,6 +9,7 @@ import {
   type MotionValue,
 } from "motion/react";
 import { useSectionScrollProgress } from "@/lib/motion";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode, RefObject } from "react";
@@ -18,20 +19,48 @@ import {
   getLogoOrbitVerticalOffset,
   OrbitStudioLogo,
 } from "@/components/brand/orbit-studio-logo";
-import { ContactForm } from "@/components/contact/contact-form";
 import { CinematicEarthCanvas } from "@/components/hero/cinematic-earth-canvas";
 import { CinematicEarthPreload } from "@/components/hero/cinematic-earth-preload";
 import { SplashScreen } from "@/components/layout/splash-screen";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { ProcessSection } from "@/components/process/process-section";
 import {
   COHEN_CO_IMAGE,
   FEATURED_PROJECTS,
   PROJECTS_PAGE_ENABLED,
   ROMEMA_IMAGE,
 } from "@/lib/projects-data";
-import { ServicesStack } from "@/components/services/services-stack";
 import { siteContent } from "@/lib/site-content";
+
+const ContactForm = dynamic(
+  () =>
+    import("@/components/contact/contact-form").then((module) => ({
+      default: module.ContactForm,
+    })),
+  { ssr: true }
+);
+
+const ProcessSection = dynamic(
+  () =>
+    import("@/components/process/process-section").then((module) => ({
+      default: module.ProcessSection,
+    })),
+  { ssr: true }
+);
+
+const ServicesStack = dynamic(
+  () =>
+    import("@/components/services/services-stack").then((module) => ({
+      default: module.ServicesStack,
+    })),
+  { ssr: true }
+);
+
+const SiteFooter = dynamic(
+  () =>
+    import("@/components/layout/site-footer").then((module) => ({
+      default: module.SiteFooter,
+    })),
+  { ssr: true }
+);
 
 const ORIGINAL_MARQUEE_IMAGES = [
   "https://motionsites.ai/assets/hero-space-voyage-preview-eECLH3Yc.gif",
