@@ -597,16 +597,21 @@ function MarqueeStrip({
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
+    let rafId = 0;
+
     const update = (): void => {
       const section = sectionRef.current;
       if (!section) return;
       const sectionTop = section.getBoundingClientRect().top + window.scrollY;
       setOffset((window.scrollY - sectionTop + window.innerHeight) * 0.3);
+      rafId = requestAnimationFrame(update);
     };
-    update();
+
+    rafId = requestAnimationFrame(update);
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
