@@ -50,7 +50,11 @@ export function useSectionScrollProgress(
       if (target) {
         const rect = target.getBoundingClientRect();
         const viewport = window.innerHeight;
-        const scrollRange = Math.max(target.offsetHeight - viewport, 1);
+        const scrollRange = Math.max(
+          target.scrollHeight - viewport,
+          target.offsetHeight - viewport,
+          1
+        );
         const next = Math.min(Math.max(-rect.top / scrollRange, 0), 1);
         progress.set(next);
       }

@@ -67,6 +67,7 @@ const MARQUEE_IMAGES = PROJECTS_PAGE_ENABLED
 
 const HERO_LOGO_SCROLL: [number, number] = [0, 0.55];
 const HERO_HEADLINE_SCROLL: [number, number] = [0, 0.85];
+const HERO_WORD_REVEAL_SCROLL: [number, number] = [0.1, 0.54];
 
 export function HomeLanding(): ReactNode {
   const reducedMotion = useReducedMotion();
@@ -500,12 +501,23 @@ function HeroAnimatedWord({
   total: number;
   isLastInLine: boolean;
 }): ReactNode {
-  const [rangeStart, rangeEnd] = HERO_HEADLINE_SCROLL;
+  const [rangeStart, rangeEnd] = HERO_WORD_REVEAL_SCROLL;
   const span = rangeEnd - rangeStart;
-  const start = rangeStart + (index / total) * span;
-  const end = rangeStart + ((index + 1) / total) * span;
-  const opacity = useTransform(progress, [0, start, end], [0, 0, 1]);
-  const y = useTransform(progress, [0, start, end], [18, 18, 0]);
+  const slot = span / Math.max(total, 1);
+  const start = rangeStart + index * slot;
+  const end = start + slot * 0.9;
+
+  const opacity = useTransform(progress, (value) => {
+    if (value <= start) return 0;
+    if (value >= end) return 1;
+    return (value - start) / (end - start);
+  });
+  const y = useTransform(progress, (value) => {
+    if (value <= start) return 18;
+    if (value >= end) return 0;
+    const t = (value - start) / (end - start);
+    return 18 * (1 - t);
+  });
 
   return (
     <motion.span style={{ opacity, y }} className="hero-rising-headline__word">
