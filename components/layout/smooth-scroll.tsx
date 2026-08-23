@@ -1,10 +1,12 @@
 "use client";
 
+import { cancelFrame, frame } from "motion/react";
 import { useEffect, type ReactNode } from "react";
 import Lenis from "lenis";
 import { features } from "@/lib/config";
 
 const LENIS_OPTIONS = {
+  autoRaf: false,
   duration: 1.6,
   easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
   orientation: "vertical" as const,
@@ -48,12 +50,11 @@ export function SmoothScroll({
       attributeFilter: ["data-splash-active"],
     });
 
-    function raf(time: number): void {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
+    function updateLenis(data: { timestamp: number }): void {
+      lenis.raf(data.timestamp);
     }
 
-    const rafId = requestAnimationFrame(raf);
+    frame.update(updateLenis, true);
 
     function handleAnchorClick(e: MouseEvent): void {
       const target = e.target as HTMLElement;
@@ -75,7 +76,7 @@ export function SmoothScroll({
     return () => {
       document.removeEventListener("click", handleAnchorClick);
       splashObserver.disconnect();
-      cancelAnimationFrame(rafId);
+      cancelFrame(updateLenis);
       lenis.destroy();
     };
   }, []);
