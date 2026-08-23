@@ -8,7 +8,7 @@ import {
   useTransform,
   type MotionValue,
 } from "motion/react";
-import { useSectionScrollProgress } from "@/lib/motion";
+import { useSectionScrollProgress, useStaggeredWordReveal } from "@/lib/motion";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode, RefObject } from "react";
@@ -67,7 +67,6 @@ const MARQUEE_IMAGES = PROJECTS_PAGE_ENABLED
 
 const HERO_LOGO_SCROLL: [number, number] = [0, 0.55];
 const HERO_HEADLINE_SCROLL: [number, number] = [0, 0.85];
-const HERO_WORD_REVEAL_SCROLL: [number, number] = [0.1, 0.54];
 
 export function HomeLanding(): ReactNode {
   const reducedMotion = useReducedMotion();
@@ -442,6 +441,7 @@ function HeroRisingHeadline({
     (count, line) => count + line.split(/\s+/).filter(Boolean).length,
     0
   );
+  const revealedWordCount = useStaggeredWordReveal(progress, totalWords, true, scale);
   let runningWordIndex = 0;
   const linesWithWordIndices = lines.map((line) => {
     const lineWords = line.split(/\s+/).filter(Boolean);
@@ -475,9 +475,7 @@ function HeroRisingHeadline({
               <HeroAnimatedWord
                 key={`${line}-${wordInLine}-${word}`}
                 word={word}
-                progress={progress}
-                index={index}
-                total={totalWords}
+                isRevealed={index < revealedWordCount}
                 isLastInLine={wordInLine === words.length - 1}
               />
             ))}
@@ -490,37 +488,20 @@ function HeroRisingHeadline({
 
 function HeroAnimatedWord({
   word,
-  progress,
-  index,
-  total,
+  isRevealed,
   isLastInLine,
 }: {
   word: string;
-  progress: MotionValue<number>;
-  index: number;
-  total: number;
+  isRevealed: boolean;
   isLastInLine: boolean;
 }): ReactNode {
-  const [rangeStart, rangeEnd] = HERO_WORD_REVEAL_SCROLL;
-  const span = rangeEnd - rangeStart;
-  const slot = span / Math.max(total, 1);
-  const start = rangeStart + index * slot;
-  const end = start + slot * 0.9;
-
-  const opacity = useTransform(progress, (value) => {
-    if (value <= start) return 0;
-    if (value >= end) return 1;
-    return (value - start) / (end - start);
-  });
-  const y = useTransform(progress, (value) => {
-    if (value <= start) return 18;
-    if (value >= end) return 0;
-    const t = (value - start) / (end - start);
-    return 18 * (1 - t);
-  });
-
   return (
-    <motion.span style={{ opacity, y }} className="hero-rising-headline__word">
+    <motion.span
+      className="hero-rising-headline__word"
+      initial={false}
+      animate={isRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+    >
       {word}
       {isLastInLine ? "" : "\u00A0"}
     </motion.span>

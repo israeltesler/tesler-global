@@ -3,6 +3,7 @@
 import {
   motion,
   useMotionValue,
+  useMotionValueEvent,
   type MotionProps,
   type MotionValue,
   type Variants,
@@ -11,6 +12,8 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
+  useState,
   useSyncExternalStore,
   type ReactNode,
   type RefObject,
@@ -66,6 +69,68 @@ export function useSectionScrollProgress(
   }, [targetRef, progress]);
 
   return progress;
+}
+
+/** Reveal headline words one-by-one once scroll begins — not tied 1:1 to scroll speed. */
+export function useStaggeredWordReveal(
+  progress: MotionValue<number>,
+  totalWords: number,
+  enabled = true,
+  scale?: MotionValue<number>
+): number {
+  const [revealedCount, setRevealedCount] = useState(0);
+  const targetCountRef = useRef(0);
+
+  const updateTarget = (next: number): void => {
+    if (!enabled || totalWords === 0) return;
+    const clamped = Math.min(totalWords, Math.max(0, next));
+    if (clamped > targetCountRef.current) {
+      targetCountRef.current = clamped;
+    }
+  };
+
+  useMotionValueEvent(progress, "change", (value) => {
+    const normalized = Math.min(Math.max(value, 0), 1);
+    if (normalized <= 0.002) return;
+    updateTarget(Math.ceil((normalized / 0.035) * totalWords));
+  });
+
+  useMotionValueEvent(scale ?? progress, "change", (value) => {
+    if (!scale) return;
+    if (value > 0.27) {
+      updateTarget(totalWords);
+      return;
+    }
+    if (value > 0.25) {
+      updateTarget(
+        Math.max(2, Math.ceil(((value - 0.24) / 0.76) * totalWords))
+      );
+    }
+  });
+
+  useEffect(() => {
+    if (!enabled || totalWords === 0) return;
+
+    const currentProgress = progress.get();
+    if (currentProgress > 0.002) {
+      updateTarget(Math.ceil((currentProgress / 0.035) * totalWords));
+    }
+    if (scale && scale.get() > 0.25) {
+      updateTarget(totalWords);
+    }
+
+    const intervalId = window.setInterval(() => {
+      setRevealedCount((current) => {
+        const target = targetCountRef.current;
+        if (current >= target || current >= totalWords) return current;
+        return current + 1;
+      });
+    }, 95);
+
+    return () => window.clearInterval(intervalId);
+  }, [enabled, totalWords]);
+
+  return enabled ? revealedCount : totalWords;
 }
 
 export function ReducedMotionProvider({
