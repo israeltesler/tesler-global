@@ -410,7 +410,7 @@ function HeroRisingHeadline({
       const globeCenterY = stageHeight * 0.5;
 
       setMotionConfig({
-        startX: -(window.innerWidth * 0.28),
+        startX: window.innerWidth * 0.28,
         startY: stageHeight * 0.2,
         maxWidth: globeDiameter * 0.7,
         anchorTop: (globeCenterY / stageHeight) * 100,
@@ -437,20 +437,17 @@ function HeroRisingHeadline({
     [motionConfig.startY, 0]
   );
   const scale = useTransform(progress, HERO_HEADLINE_SCROLL, [0.24, 1]);
-  const totalWords = lines.reduce(
-    (count, line) => count + line.split(/\s+/).filter(Boolean).length,
-    0
-  );
-  let runningWordIndex = 0;
-  const linesWithWordIndices = lines.map((line) => {
-    const lineWords = line.split(/\s+/).filter(Boolean);
-    const words = lineWords.map((word, wordInLine) => ({
-      word,
-      wordInLine,
-      index: runningWordIndex++,
+  const headlineOpacity = useTransform(progress, [0, 0.02], [0, 1]);
+  const totalCharacters = lines.reduce((count, line) => count + line.length, 0);
+  let runningCharIndex = 0;
+  const linesWithCharIndices = lines.map((line) => {
+    const characters = [...line].map((character, charInLine) => ({
+      character,
+      charInLine,
+      index: runningCharIndex++,
     }));
 
-    return { line, words };
+    return { line, characters };
   });
 
   return (
@@ -464,20 +461,21 @@ function HeroRisingHeadline({
           x,
           y,
           scale,
+          opacity: headlineOpacity,
           width: motionConfig.maxWidth,
+          transformOrigin: "100% 100%",
         }}
         aria-label={lines.join(" ")}
       >
-      {linesWithWordIndices.map(({ line, words }) => (
+      {linesWithCharIndices.map(({ line, characters }) => (
           <p key={line} className="hero-rising-headline__line">
-            {words.map(({ word, wordInLine, index }) => (
-              <HeroAnimatedWord
-                key={`${line}-${wordInLine}-${word}`}
-                word={word}
-                scale={scale}
+            {characters.map(({ character, charInLine, index }) => (
+              <HeroAnimatedCharacter
+                key={`${line}-${charInLine}-${character}`}
+                character={character}
+                progress={progress}
                 index={index}
-                total={totalWords}
-                isLastInLine={wordInLine === words.length - 1}
+                total={totalCharacters}
               />
             ))}
           </p>
@@ -487,31 +485,27 @@ function HeroRisingHeadline({
   );
 }
 
-function HeroAnimatedWord({
-  word,
-  scale,
+function HeroAnimatedCharacter({
+  character,
+  progress,
   index,
   total,
-  isLastInLine,
 }: {
-  word: string;
-  scale: MotionValue<number>;
+  character: string;
+  progress: MotionValue<number>;
   index: number;
   total: number;
-  isLastInLine: boolean;
 }): ReactNode {
-  const minScale = 0.24;
-  const maxScale = 1;
-  const range = maxScale - minScale;
-  const start = minScale + (index / total) * range;
-  const end = minScale + ((index + 1) / total) * range;
-  const opacity = useTransform(scale, [start, end], [0, 1], { clamp: true });
-  const y = useTransform(scale, [start, end], [18, 0], { clamp: true });
+  const [rangeStart, rangeEnd] = HERO_HEADLINE_SCROLL;
+  const span = rangeEnd - rangeStart;
+  const start = rangeStart + (index / total) * span;
+  const end = rangeStart + ((index + 1) / total) * span;
+  const opacity = useTransform(progress, [0, start, end], [0, 0, 1]);
+  const y = useTransform(progress, [0, start, end], [18, 18, 0]);
 
   return (
-    <motion.span style={{ opacity, y }} className="hero-rising-headline__word">
-      {word}
-      {isLastInLine ? "" : "\u00A0"}
+    <motion.span style={{ opacity, y }} className="hero-rising-headline__char">
+      {character}
     </motion.span>
   );
 }

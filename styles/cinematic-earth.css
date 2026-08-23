@@ -190,7 +190,8 @@
   text-wrap: balance;
 }
 
-.hero-rising-headline__word {
+.hero-rising-headline__word,
+.hero-rising-headline__char {
   display: inline-block;
   white-space: pre;
   will-change: transform, opacity;
