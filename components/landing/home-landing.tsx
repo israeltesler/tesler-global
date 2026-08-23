@@ -12,7 +12,7 @@ import { useSectionScrollProgress } from "@/lib/motion";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode, RefObject } from "react";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 
 import {
   getLogoOrbitVerticalOffset,
@@ -417,7 +417,7 @@ function HeroRisingHeadline({
       setMotionConfig({
         startX: -(window.innerWidth * 0.28),
         startY: stageHeight * 0.2,
-        maxWidth: globeDiameter * 0.82,
+        maxWidth: globeDiameter * 0.88,
         anchorTop: (globeCenterY / stageHeight) * 100,
       });
     };
@@ -595,69 +595,68 @@ function MarqueeStrip({
 }: {
   sectionRef: RefObject<HTMLElement | null>;
 }): ReactNode {
-  const [offset, setOffset] = useState(0);
+  const rowARef = useRef<HTMLDivElement>(null);
+  const rowBRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let rafId = 0;
 
     const update = (): void => {
       const section = sectionRef.current;
-      if (!section) return;
-      const sectionTop = section.getBoundingClientRect().top + window.scrollY;
-      setOffset((window.scrollY - sectionTop + window.innerHeight) * MARQUEE_SCROLL_FACTOR);
+      if (section) {
+        const offset =
+          (-section.getBoundingClientRect().top + window.innerHeight) *
+          MARQUEE_SCROLL_FACTOR;
+        const parallaxA = offset - 200;
+        const parallaxB = -(offset - 200);
+
+        if (rowARef.current) {
+          rowARef.current.style.transform = `translate3d(${parallaxA}px,0,0)`;
+        }
+        if (rowBRef.current) {
+          rowBRef.current.style.transform = `translate3d(${parallaxB}px,0,0)`;
+        }
+      }
+      rafId = requestAnimationFrame(update);
     };
 
-    const loop = (): void => {
-      update();
-      rafId = requestAnimationFrame(loop);
-    };
-
-    rafId = requestAnimationFrame(loop);
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-    };
+    rafId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(rafId);
   }, [sectionRef]);
 
   return (
     <>
-      <MarqueeRow images={MARQUEE_IMAGES.slice(0, 11)} x={offset - 200} />
+      <MarqueeRow ref={rowARef} images={MARQUEE_IMAGES.slice(0, 11)} />
       <div className="h-3" />
-      <MarqueeRow images={MARQUEE_IMAGES.slice(11)} x={-(offset - 200)} />
+      <MarqueeRow ref={rowBRef} images={MARQUEE_IMAGES.slice(11)} />
     </>
   );
 }
 
-function MarqueeRow({
-  images,
-  x,
-}: {
-  images: readonly string[];
-  x: number;
-}): ReactNode {
-  const repeated = [...images, ...images, ...images];
-  return (
-    <div
-      className="flex w-max gap-3"
-      style={{ transform: `translate3d(${x}px,0,0)`, willChange: "transform" }}
-    >
-      {repeated.map((src, index) => (
-        <img
-          key={`${src}-${index}`}
-          src={src}
-          alt=""
-          width={420}
-          height={270}
-          loading="lazy"
-          className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
-        />
-      ))}
-    </div>
-  );
-}
+const MarqueeRow = forwardRef<HTMLDivElement, { images: readonly string[] }>(
+  function MarqueeRow({ images }, ref): ReactNode {
+    const repeated = [...images, ...images, ...images];
+    return (
+      <div
+        ref={ref}
+        className="flex w-max gap-3"
+        style={{ willChange: "transform" }}
+      >
+        {repeated.map((src, index) => (
+          <img
+            key={`${src}-${index}`}
+            src={src}
+            alt=""
+            width={420}
+            height={270}
+            loading="lazy"
+            className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
+          />
+        ))}
+      </div>
+    );
+  }
+);
 
 function AboutSection(): ReactNode {
   const sectionRef = useRef<HTMLElement>(null);

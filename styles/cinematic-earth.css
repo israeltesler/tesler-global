@@ -187,11 +187,11 @@
   font-weight: 800;
   letter-spacing: -0.035em;
   color: #fff;
-  text-wrap: balance;
+  white-space: nowrap;
 }
 
 .hero-rising-headline__line--accent {
-  font-size: clamp(2.9rem, 12vmin, 9.25rem);
+  font-size: clamp(2.65rem, 10.5vmin, 8.5rem);
   line-height: 0.96;
   letter-spacing: -0.045em;
   font-weight: 900;
@@ -388,7 +388,7 @@
   }
 
   .hero-rising-headline__line--accent {
-    font-size: clamp(2.25rem, 8.8vmin, 4rem);
+    font-size: clamp(2rem, 8vmin, 3.6rem);
   }
 
   .hero-footer-left {
