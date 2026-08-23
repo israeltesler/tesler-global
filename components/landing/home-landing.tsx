@@ -71,6 +71,7 @@ const HERO_SCALE_MIN = 0.24;
 const HERO_SCALE_MAX = 1;
 const HERO_WORD_REVEAL_SCALE_END =
   HERO_SCALE_MIN + (HERO_SCALE_MAX - HERO_SCALE_MIN) * 0.72;
+const MARQUEE_SCROLL_FACTOR = 0.58;
 
 export function HomeLanding(): ReactNode {
   const reducedMotion = useReducedMotion();
@@ -603,7 +604,7 @@ function MarqueeStrip({
       const section = sectionRef.current;
       if (!section) return;
       const sectionTop = section.getBoundingClientRect().top + window.scrollY;
-      setOffset((window.scrollY - sectionTop + window.innerHeight) * 0.3);
+      setOffset((window.scrollY - sectionTop + window.innerHeight) * MARQUEE_SCROLL_FACTOR);
     };
 
     const loop = (): void => {
