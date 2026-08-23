@@ -210,35 +210,9 @@
   font-weight: 900;
 }
 
-.marquee-row__parallax {
-  will-change: transform;
-}
-
+.marquee-row__parallax,
 .marquee-row__track {
-  animation: marquee-track 42s linear infinite;
-  animation-play-state: running;
   will-change: transform;
-}
-
-.marquee-row__track--reverse {
-  animation-direction: reverse;
-}
-
-@keyframes marquee-track {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-33.333%, 0, 0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .marquee-row__track {
-    animation: marquee-track 42s linear infinite !important;
-    animation-duration: 42s !important;
-    animation-iteration-count: infinite !important;
-  }
 }
 
 .hero-footer-left {

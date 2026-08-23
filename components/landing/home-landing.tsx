@@ -594,45 +594,16 @@ function MarqueeStrip({
 }: {
   sectionRef: RefObject<HTMLElement | null>;
 }): ReactNode {
-  const rowARef = useRef<HTMLDivElement>(null);
-  const rowBRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let rafId = 0;
-
-    const update = (): void => {
-      const section = sectionRef.current;
-      if (section) {
-        const sectionTop =
-          section.getBoundingClientRect().top + window.scrollY;
-        const offset = (window.scrollY - sectionTop + window.innerHeight) * 0.3;
-        const parallaxA = offset - 200;
-        const parallaxB = -(offset - 200);
-
-        if (rowARef.current) {
-          rowARef.current.style.transform = `translate3d(${parallaxA}px,0,0)`;
-        }
-        if (rowBRef.current) {
-          rowBRef.current.style.transform = `translate3d(${parallaxB}px,0,0)`;
-        }
-      }
-      rafId = requestAnimationFrame(update);
-    };
-
-    rafId = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(rafId);
-  }, [sectionRef]);
-
   return (
     <>
       <MarqueeRow
-        parallaxRef={rowARef}
+        sectionRef={sectionRef}
         images={MARQUEE_IMAGES.slice(0, 11)}
         reverse={false}
       />
       <div className="h-3" />
       <MarqueeRow
-        parallaxRef={rowBRef}
+        sectionRef={sectionRef}
         images={MARQUEE_IMAGES.slice(11)}
         reverse
       />
@@ -641,25 +612,62 @@ function MarqueeStrip({
 }
 
 function MarqueeRow({
+  sectionRef,
   images,
-  parallaxRef,
   reverse = false,
 }: {
+  sectionRef: RefObject<HTMLElement | null>;
   images: readonly string[];
-  parallaxRef: RefObject<HTMLDivElement | null>;
   reverse?: boolean;
 }): ReactNode {
+  const parallaxRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
   const repeated = [...images, ...images, ...images];
+
+  useEffect(() => {
+    let rafId = 0;
+    let marqueeOffset = 0;
+    let lastTime = 0;
+
+    const tick = (time: number): void => {
+      const section = sectionRef.current;
+      const parallaxEl = parallaxRef.current;
+      const track = trackRef.current;
+
+      if (section && parallaxEl) {
+        const sectionTop =
+          section.getBoundingClientRect().top + window.scrollY;
+        const scrollOffset =
+          (window.scrollY - sectionTop + window.innerHeight) * 0.3 - 200;
+        const parallaxX = reverse ? -scrollOffset : scrollOffset;
+        parallaxEl.style.transform = `translate3d(${parallaxX}px,0,0)`;
+      }
+
+      if (track) {
+        const loopWidth = track.scrollWidth / 3;
+        if (loopWidth > 0) {
+          if (!lastTime) lastTime = time;
+          const delta = Math.min((time - lastTime) / 1000, 0.05);
+          lastTime = time;
+          const speed = loopWidth / 42;
+          marqueeOffset += (reverse ? speed : -speed) * delta;
+          if (marqueeOffset <= -loopWidth) marqueeOffset += loopWidth;
+          if (marqueeOffset >= loopWidth) marqueeOffset -= loopWidth;
+          track.style.transform = `translate3d(${marqueeOffset}px,0,0)`;
+        }
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [reverse, sectionRef]);
+
   return (
     <div className="marquee-row overflow-hidden">
-      <div
-        ref={parallaxRef}
-        className="marquee-row__parallax"
-        style={{ willChange: "transform" }}
-      >
-        <div
-          className={`marquee-row__track flex w-max gap-3${reverse ? " marquee-row__track--reverse" : ""}`}
-        >
+      <div ref={parallaxRef} className="marquee-row__parallax">
+        <div ref={trackRef} className="marquee-row__track flex w-max gap-3">
           {repeated.map((src, index) => (
             <img
               key={`${src}-${index}`}
@@ -667,7 +675,7 @@ function MarqueeRow({
               alt=""
               width={420}
               height={270}
-              loading="lazy"
+              loading={index < 6 ? "eager" : "lazy"}
               decoding="async"
               className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
             />
