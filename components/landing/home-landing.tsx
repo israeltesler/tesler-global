@@ -3,12 +3,13 @@
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import {
   motion,
+  useMotionValueEvent,
   useReducedMotion,
   useScroll,
   useTransform,
   type MotionValue,
 } from "motion/react";
-import { useSectionScrollProgress, useStaggeredWordReveal } from "@/lib/motion";
+import { useSectionScrollProgress } from "@/lib/motion";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode, RefObject } from "react";
@@ -67,6 +68,38 @@ const MARQUEE_IMAGES = PROJECTS_PAGE_ENABLED
 
 const HERO_LOGO_SCROLL: [number, number] = [0, 0.55];
 const HERO_HEADLINE_SCROLL: [number, number] = [0, 0.85];
+const HERO_WORD_STAGGER_S = 0.13;
+const HERO_WORD_REVEAL_DURATION_S = 0.4;
+
+function useHeroWordsActive(progress: MotionValue<number>): boolean {
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    if (active) return;
+
+    const start = (): void => {
+      setActive(true);
+    };
+
+    window.addEventListener("wheel", start, { passive: true });
+    window.addEventListener("touchmove", start, { passive: true });
+    window.addEventListener("keydown", start, { passive: true });
+
+    return () => {
+      window.removeEventListener("wheel", start);
+      window.removeEventListener("touchmove", start);
+      window.removeEventListener("keydown", start);
+    };
+  }, [active]);
+
+  useMotionValueEvent(progress, "change", (value) => {
+    if (value > 0.004) {
+      setActive(true);
+    }
+  });
+
+  return active;
+}
 
 export function HomeLanding(): ReactNode {
   const reducedMotion = useReducedMotion();
@@ -437,11 +470,7 @@ function HeroRisingHeadline({
     [motionConfig.startY, 0]
   );
   const scale = useTransform(progress, HERO_HEADLINE_SCROLL, [0.24, 1]);
-  const totalWords = lines.reduce(
-    (count, line) => count + line.split(/\s+/).filter(Boolean).length,
-    0
-  );
-  const revealedWordCount = useStaggeredWordReveal(progress, totalWords, true, scale);
+  const animateWords = useHeroWordsActive(progress);
   let runningWordIndex = 0;
   const linesWithWordIndices = lines.map((line) => {
     const lineWords = line.split(/\s+/).filter(Boolean);
@@ -475,7 +504,8 @@ function HeroRisingHeadline({
               <HeroAnimatedWord
                 key={`${line}-${wordInLine}-${word}`}
                 word={word}
-                isRevealed={index < revealedWordCount}
+                index={index}
+                animateWords={animateWords}
                 isLastInLine={wordInLine === words.length - 1}
               />
             ))}
@@ -488,19 +518,25 @@ function HeroRisingHeadline({
 
 function HeroAnimatedWord({
   word,
-  isRevealed,
+  index,
+  animateWords,
   isLastInLine,
 }: {
   word: string;
-  isRevealed: boolean;
+  index: number;
+  animateWords: boolean;
   isLastInLine: boolean;
 }): ReactNode {
   return (
     <motion.span
       className="hero-rising-headline__word"
-      initial={false}
-      animate={isRevealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
-      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, y: 18 }}
+      animate={animateWords ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+      transition={{
+        duration: HERO_WORD_REVEAL_DURATION_S,
+        delay: index * HERO_WORD_STAGGER_S,
+        ease: [0.22, 1, 0.36, 1],
+      }}
     >
       {word}
       {isLastInLine ? "" : "\u00A0"}
