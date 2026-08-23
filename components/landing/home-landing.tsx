@@ -8,6 +8,7 @@ import {
   useTransform,
   type MotionValue,
 } from "motion/react";
+import { useSectionScrollProgress } from "@/lib/motion";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode, RefObject } from "react";
@@ -208,10 +209,7 @@ function HeroSection({
   const [logoTravel, setLogoTravel] = useState(0);
   const [logoTravelX, setLogoTravelX] = useState(0);
   const [logoIntroOffset, setLogoIntroOffset] = useState(64);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end end"],
-  });
+  const scrollYProgress = useSectionScrollProgress(sectionRef);
 
   const logoX = useTransform(
     scrollYProgress,
@@ -431,14 +429,14 @@ function HeroRisingHeadline({
   const x = useTransform(
     progress,
     HERO_HEADLINE_SCROLL,
-    [motionConfig.startX * 0.15, 0]
+    [motionConfig.startX, 0]
   );
   const y = useTransform(
     progress,
     HERO_HEADLINE_SCROLL,
-    [motionConfig.startY * 0.12, 0]
+    [motionConfig.startY, 0]
   );
-  const scale = useTransform(progress, HERO_HEADLINE_SCROLL, [0.92, 1]);
+  const scale = useTransform(progress, HERO_HEADLINE_SCROLL, [0.24, 1]);
   const totalWords = lines.reduce(
     (count, line) => count + line.split(/\s+/).filter(Boolean).length,
     0
@@ -506,8 +504,8 @@ function HeroAnimatedWord({
   const span = rangeEnd - rangeStart;
   const start = rangeStart + (index / total) * span;
   const end = rangeStart + ((index + 1) / total) * span;
-  const opacity = useTransform(progress, [0, start, end], [1, 1, 1]);
-  const y = useTransform(progress, [0, start, end], [0, 0, 0]);
+  const opacity = useTransform(progress, [0, start, end], [0, 0, 1]);
+  const y = useTransform(progress, [0, start, end], [18, 18, 0]);
 
   return (
     <motion.span style={{ opacity, y }} className="hero-rising-headline__word">
@@ -569,45 +567,63 @@ function MarqueeSection(): ReactNode {
 }
 
 function MarqueeStrip({
-  sectionRef: _sectionRef,
+  sectionRef,
 }: {
   sectionRef: RefObject<HTMLElement | null>;
 }): ReactNode {
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    let rafId = 0;
+
+    const update = (): void => {
+      const section = sectionRef.current;
+      if (section) {
+        const sectionTop =
+          section.getBoundingClientRect().top + window.scrollY;
+        setOffset((window.scrollY - sectionTop + window.innerHeight) * 0.3);
+      }
+      rafId = requestAnimationFrame(update);
+    };
+
+    rafId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(rafId);
+  }, [sectionRef]);
+
   return (
     <>
-      <MarqueeRow images={MARQUEE_IMAGES.slice(0, 11)} reverse={false} />
+      <MarqueeRow images={MARQUEE_IMAGES.slice(0, 11)} x={offset - 200} />
       <div className="h-3" />
-      <MarqueeRow images={MARQUEE_IMAGES.slice(11)} reverse />
+      <MarqueeRow images={MARQUEE_IMAGES.slice(11)} x={-(offset - 200)} />
     </>
   );
 }
 
 function MarqueeRow({
   images,
-  reverse = false,
+  x,
 }: {
   images: readonly string[];
-  reverse?: boolean;
+  x: number;
 }): ReactNode {
   const repeated = [...images, ...images, ...images];
   return (
-    <div className="marquee-row overflow-hidden">
-      <div
-        className={`marquee-row__track flex w-max gap-3${reverse ? " marquee-row__track--reverse" : ""}`}
-      >
-        {repeated.map((src, index) => (
-          <img
-            key={`${src}-${index}`}
-            src={src}
-            alt=""
-            width={420}
-            height={270}
-            loading="lazy"
-            decoding="async"
-            className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
-          />
-        ))}
-      </div>
+    <div
+      className="flex w-max gap-3"
+      style={{ transform: `translate3d(${x}px,0,0)`, willChange: "transform" }}
+    >
+      {repeated.map((src, index) => (
+        <img
+          key={`${src}-${index}`}
+          src={src}
+          alt=""
+          width={420}
+          height={270}
+          loading="lazy"
+          decoding="async"
+          className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
+        />
+      ))}
     </div>
   );
 }

@@ -1,11 +1,19 @@
 "use client";
 
-import { motion, type MotionProps, type Variants } from "motion/react";
+import {
+  motion,
+  useMotionValue,
+  type MotionProps,
+  type MotionValue,
+  type Variants,
+} from "motion/react";
 import {
   createContext,
   useContext,
+  useEffect,
   useSyncExternalStore,
   type ReactNode,
+  type RefObject,
 } from "react";
 
 function subscribeToReducedMotion(callback: () => void): () => void {
@@ -26,6 +34,34 @@ const ReducedMotionContext = createContext<boolean>(false);
 
 export function useReducedMotion(): boolean {
   return useContext(ReducedMotionContext);
+}
+
+/** Scroll progress for tall sections — works with Lenis smooth scroll. */
+export function useSectionScrollProgress(
+  targetRef: RefObject<HTMLElement | null>
+): MotionValue<number> {
+  const progress = useMotionValue(0);
+
+  useEffect(() => {
+    let rafId = 0;
+
+    const measure = (): void => {
+      const target = targetRef.current;
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        const viewport = window.innerHeight;
+        const scrollRange = Math.max(target.offsetHeight - viewport, 1);
+        const next = Math.min(Math.max(-rect.top / scrollRange, 0), 1);
+        progress.set(next);
+      }
+      rafId = requestAnimationFrame(measure);
+    };
+
+    rafId = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(rafId);
+  }, [targetRef, progress]);
+
+  return progress;
 }
 
 export function ReducedMotionProvider({
