@@ -475,8 +475,15 @@ function HeroRisingHeadline({
         }}
         aria-label={lines.join(" ")}
       >
-      {linesWithWordIndices.map(({ line, words }) => (
-          <p key={line} className="hero-rising-headline__line">
+      {linesWithWordIndices.map(({ line, words }, lineIndex) => (
+          <p
+            key={line}
+            className={
+              lineIndex === lines.length - 1
+                ? "hero-rising-headline__line hero-rising-headline__line--accent"
+                : "hero-rising-headline__line"
+            }
+          >
             {words.map(({ word, wordInLine, index }) => (
               <HeroAnimatedWord
                 key={`${line}-${wordInLine}-${word}`}

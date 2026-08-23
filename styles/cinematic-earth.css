@@ -190,6 +190,12 @@
   text-wrap: balance;
 }
 
+.hero-rising-headline__line--accent {
+  font-size: clamp(2.35rem, 9.2vmin, 7.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
 .hero-rising-headline__word,
 .hero-rising-headline__char {
   display: inline-block;
@@ -372,6 +378,10 @@
 
   .hero-rising-headline__line {
     font-size: clamp(1.55rem, 5.8vmin, 2.75rem);
+  }
+
+  .hero-rising-headline__line--accent {
+    font-size: clamp(1.95rem, 7.4vmin, 3.45rem);
   }
 
   .hero-footer-left {
