@@ -64,7 +64,7 @@ export default function RootLayout({
       <head>
         <link
           rel="preload"
-          href="/cinematic-earth/8k_earth_daymap.jpg"
+          href="/cinematic-earth/hero/8k_earth_daymap.jpg"
           as="image"
           fetchPriority="high"
         />

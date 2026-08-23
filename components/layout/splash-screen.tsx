@@ -6,9 +6,9 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { useReducedMotion } from "@/lib/motion";
 
 const MIN_HOLD_AFTER_READY = 0;
-const MAX_WAIT = 4000;
+const MAX_WAIT = 2500;
 const CURTAIN_DELAY = 0;
-const CURTAIN_DURATION = 800;
+const CURTAIN_DURATION = 500;
 
 type SplashPhase = "hold" | "rising" | "done";
 
@@ -85,7 +85,7 @@ export function SplashScreen({
       const holdComplete =
         readyAt !== null && now - readyAt >= MIN_HOLD_AFTER_READY;
       const timedOut = now - start >= MAX_WAIT;
-      const ready = canvasReady && (holdComplete || timedOut);
+      const ready = (canvasReady && holdComplete) || timedOut;
 
       if (ready) {
         riseTimeout = window.setTimeout(() => setPhase("rising"), CURTAIN_DELAY);

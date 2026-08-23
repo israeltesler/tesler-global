@@ -19,7 +19,6 @@ import {
   getLogoOrbitVerticalOffset,
   OrbitStudioLogo,
 } from "@/components/brand/orbit-studio-logo";
-import { CinematicEarthCanvas } from "@/components/hero/cinematic-earth-canvas";
 import { CinematicEarthPreload } from "@/components/hero/cinematic-earth-preload";
 import { SplashScreen } from "@/components/layout/splash-screen";
 import {
@@ -29,6 +28,14 @@ import {
   ROMEMA_IMAGE,
 } from "@/lib/projects-data";
 import { siteContent } from "@/lib/site-content";
+
+const CinematicEarthCanvas = dynamic(
+  () =>
+    import("@/components/hero/cinematic-earth-canvas").then((module) => ({
+      default: module.CinematicEarthCanvas,
+    })),
+  { ssr: false }
+);
 
 const ContactForm = dynamic(
   () =>
@@ -119,18 +126,22 @@ export function HomeLanding(): ReactNode {
         splashActive={splashActive}
         onSplashComplete={() => setSplashComplete(true)}
       />
-      <AboutSection />
-      <MarqueeSection />
-      <ServicesSection />
-      {PROJECTS_PAGE_ENABLED ? <ProjectsSection /> : null}
-      <ProcessSection />
-      <div
-        ref={ctaBetweenGapRef}
-        className="hero-cta-between-zone"
-        aria-hidden="true"
-      />
-      <ContactSection sectionRef={contactSectionRef} />
-      <SiteFooter />
+      {splashComplete ? (
+        <>
+          <AboutSection />
+          <MarqueeSection />
+          <ServicesSection />
+          {PROJECTS_PAGE_ENABLED ? <ProjectsSection /> : null}
+          <ProcessSection />
+          <div
+            ref={ctaBetweenGapRef}
+            className="hero-cta-between-zone"
+            aria-hidden="true"
+          />
+          <ContactSection sectionRef={contactSectionRef} />
+          <SiteFooter />
+        </>
+      ) : null}
       <PersistentHeroCta
         betweenGapRef={ctaBetweenGapRef}
         contactRef={contactSectionRef}
@@ -628,29 +639,46 @@ function MarqueeStrip({
   const rowBRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
     let rafId = 0;
+    let visible = false;
 
     const update = (): void => {
-      const section = sectionRef.current;
-      if (section) {
-        const offset =
-          (-section.getBoundingClientRect().top + window.innerHeight) *
-          MARQUEE_SCROLL_FACTOR;
-        const parallaxA = offset - 200;
-        const parallaxB = -(offset - 200);
+      if (!visible) {
+        rafId = requestAnimationFrame(update);
+        return;
+      }
 
-        if (rowARef.current) {
-          rowARef.current.style.transform = `translate3d(${parallaxA}px,0,0)`;
-        }
-        if (rowBRef.current) {
-          rowBRef.current.style.transform = `translate3d(${parallaxB}px,0,0)`;
-        }
+      const offset =
+        (-section.getBoundingClientRect().top + window.innerHeight) *
+        MARQUEE_SCROLL_FACTOR;
+      const parallaxA = offset - 200;
+      const parallaxB = -(offset - 200);
+
+      if (rowARef.current) {
+        rowARef.current.style.transform = `translate3d(${parallaxA}px,0,0)`;
+      }
+      if (rowBRef.current) {
+        rowBRef.current.style.transform = `translate3d(${parallaxB}px,0,0)`;
       }
       rafId = requestAnimationFrame(update);
     };
 
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry?.isIntersecting ?? false;
+      },
+      { rootMargin: "200px 0px" }
+    );
+    observer.observe(section);
     rafId = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(rafId);
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(rafId);
+    };
   }, [sectionRef]);
 
   return (
@@ -664,7 +692,7 @@ function MarqueeStrip({
 
 const MarqueeRow = forwardRef<HTMLDivElement, { images: readonly string[] }>(
   function MarqueeRow({ images }, ref): ReactNode {
-    const repeated = [...images, ...images, ...images];
+    const repeated = [...images, ...images];
     return (
       <div
         ref={ref}
@@ -679,6 +707,8 @@ const MarqueeRow = forwardRef<HTMLDivElement, { images: readonly string[] }>(
             width={420}
             height={270}
             loading="lazy"
+            decoding="async"
+            fetchPriority="low"
             className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
           />
         ))}
