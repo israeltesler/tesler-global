@@ -59,9 +59,9 @@ export const siteContent = {
       { label: "טופס יצירת קשר", href: "/#contact" },
     ],
     legalLinks: [
-      { label: "תקנון שימוש", href: "#" },
-      { label: "מדיניות פרטיות", href: "#" },
-      { label: "הסדרי נגישות", href: "#" },
+      { label: "תקנון שימוש", href: "/terms" },
+      { label: "מדיניות פרטיות", href: "/privacy" },
+      { label: "הסדרי נגישות", href: "/accessibility" },
     ],
   },
 } as const;
