@@ -8,7 +8,7 @@ import {
   useTransform,
   type MotionValue,
 } from "motion/react";
-import { useSectionScrollProgress } from "@/lib/motion";
+import { useSectionScrollProgress, useStaggeredWordReveal } from "@/lib/motion";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode, RefObject } from "react";
@@ -441,6 +441,12 @@ function HeroRisingHeadline({
     (count, line) => count + line.split(/\s+/).filter(Boolean).length,
     0
   );
+  const revealedCount = useStaggeredWordReveal(
+    progress,
+    totalWords,
+    true,
+    scale
+  );
   let runningWordIndex = 0;
   const linesWithWordIndices = lines.map((line) => {
     const lineWords = line.split(/\s+/).filter(Boolean);
@@ -474,9 +480,8 @@ function HeroRisingHeadline({
               <HeroAnimatedWord
                 key={`${line}-${wordInLine}-${word}`}
                 word={word}
-                progress={progress}
                 index={index}
-                total={totalWords}
+                revealedCount={revealedCount}
                 isLastInLine={wordInLine === words.length - 1}
               />
             ))}
@@ -489,26 +494,24 @@ function HeroRisingHeadline({
 
 function HeroAnimatedWord({
   word,
-  progress,
   index,
-  total,
+  revealedCount,
   isLastInLine,
 }: {
   word: string;
-  progress: MotionValue<number>;
   index: number;
-  total: number;
+  revealedCount: number;
   isLastInLine: boolean;
 }): ReactNode {
-  const [rangeStart, rangeEnd] = HERO_HEADLINE_SCROLL;
-  const span = rangeEnd - rangeStart;
-  const start = rangeStart + (index / total) * span;
-  const end = rangeStart + ((index + 1) / total) * span;
-  const opacity = useTransform(progress, [0, start, end], [0, 0, 1]);
-  const y = useTransform(progress, [0, start, end], [18, 18, 0]);
+  const visible = index < revealedCount;
 
   return (
-    <motion.span style={{ opacity, y }} className="hero-rising-headline__word">
+    <motion.span
+      className="hero-rising-headline__word"
+      initial={false}
+      animate={visible ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+      transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+    >
       {word}
       {isLastInLine ? "" : "\u00A0"}
     </motion.span>
