@@ -191,9 +191,11 @@
 }
 
 .hero-rising-headline__line--accent {
-  font-size: clamp(2.35rem, 9.2vmin, 7.5rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
+  font-size: clamp(2.9rem, 12vmin, 9.25rem);
+  line-height: 0.96;
+  letter-spacing: -0.045em;
+  font-weight: 900;
+  margin-top: 0.06em;
 }
 
 .hero-rising-headline__word,
@@ -201,6 +203,11 @@
   display: inline-block;
   white-space: pre;
   will-change: transform, opacity;
+}
+
+.hero-rising-headline__word--accent {
+  font-size: 1em;
+  font-weight: 900;
 }
 
 .hero-footer-left {
@@ -381,7 +388,7 @@
   }
 
   .hero-rising-headline__line--accent {
-    font-size: clamp(1.95rem, 7.4vmin, 3.45rem);
+    font-size: clamp(2.25rem, 8.8vmin, 4rem);
   }
 
   .hero-footer-left {

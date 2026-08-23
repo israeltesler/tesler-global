@@ -412,7 +412,7 @@ function HeroRisingHeadline({
       setMotionConfig({
         startX: -(window.innerWidth * 0.28),
         startY: stageHeight * 0.2,
-        maxWidth: globeDiameter * 0.7,
+        maxWidth: globeDiameter * 0.82,
         anchorTop: (globeCenterY / stageHeight) * 100,
       });
     };
@@ -475,11 +475,13 @@ function HeroRisingHeadline({
         }}
         aria-label={lines.join(" ")}
       >
-      {linesWithWordIndices.map(({ line, words }, lineIndex) => (
+      {linesWithWordIndices.map(({ line, words }, lineIndex) => {
+        const isAccentLine = lineIndex === lines.length - 1;
+        return (
           <p
             key={line}
             className={
-              lineIndex === lines.length - 1
+              isAccentLine
                 ? "hero-rising-headline__line hero-rising-headline__line--accent"
                 : "hero-rising-headline__line"
             }
@@ -491,11 +493,13 @@ function HeroRisingHeadline({
                 index={index}
                 total={totalWords}
                 revealedCount={revealedCount}
+                emphasized={isAccentLine}
                 isLastInLine={wordInLine === words.length - 1}
               />
             ))}
           </p>
-        ))}
+        );
+      })}
     </motion.div>
     </div>
   );
@@ -506,12 +510,14 @@ function HeroAnimatedWord({
   index,
   total,
   revealedCount,
+  emphasized = false,
   isLastInLine,
 }: {
   word: string;
   index: number;
   total: number;
   revealedCount: number;
+  emphasized?: boolean;
   isLastInLine: boolean;
 }): ReactNode {
   // Reveal from screen-left to screen-right (RTL lines read right-to-left).
@@ -519,7 +525,11 @@ function HeroAnimatedWord({
 
   return (
     <motion.span
-      className="hero-rising-headline__word"
+      className={
+        emphasized
+          ? "hero-rising-headline__word hero-rising-headline__word--accent"
+          : "hero-rising-headline__word"
+      }
       initial={false}
       animate={visible ? { opacity: 1, x: 0, y: 0 } : { opacity: 0, x: -14, y: 18 }}
       transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
