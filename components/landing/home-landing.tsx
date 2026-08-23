@@ -594,94 +594,57 @@ function MarqueeStrip({
 }: {
   sectionRef: RefObject<HTMLElement | null>;
 }): ReactNode {
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    const update = (): void => {
+      const section = sectionRef.current;
+      if (!section) return;
+      const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+      setOffset((window.scrollY - sectionTop + window.innerHeight) * 0.3);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [sectionRef]);
+
   return (
     <>
-      <MarqueeRow
-        sectionRef={sectionRef}
-        images={MARQUEE_IMAGES.slice(0, 11)}
-        reverse={false}
-      />
+      <MarqueeRow images={MARQUEE_IMAGES.slice(0, 11)} x={offset - 200} />
       <div className="h-3" />
-      <MarqueeRow
-        sectionRef={sectionRef}
-        images={MARQUEE_IMAGES.slice(11)}
-        reverse
-      />
+      <MarqueeRow images={MARQUEE_IMAGES.slice(11)} x={-(offset - 200)} />
     </>
   );
 }
 
 function MarqueeRow({
-  sectionRef,
   images,
-  reverse = false,
+  x,
 }: {
-  sectionRef: RefObject<HTMLElement | null>;
   images: readonly string[];
-  reverse?: boolean;
+  x: number;
 }): ReactNode {
-  const parallaxRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
   const repeated = [...images, ...images, ...images];
-
-  useEffect(() => {
-    let rafId = 0;
-    let marqueeOffset = 0;
-    let lastTime = 0;
-
-    const tick = (time: number): void => {
-      const section = sectionRef.current;
-      const parallaxEl = parallaxRef.current;
-      const track = trackRef.current;
-
-      if (section && parallaxEl) {
-        const sectionTop =
-          section.getBoundingClientRect().top + window.scrollY;
-        const scrollOffset =
-          (window.scrollY - sectionTop + window.innerHeight) * 0.3 - 200;
-        const parallaxX = reverse ? -scrollOffset : scrollOffset;
-        parallaxEl.style.transform = `translate3d(${parallaxX}px,0,0)`;
-      }
-
-      if (track) {
-        const loopWidth = track.scrollWidth / 3;
-        if (loopWidth > 0) {
-          if (!lastTime) lastTime = time;
-          const delta = Math.min((time - lastTime) / 1000, 0.05);
-          lastTime = time;
-          const speed = loopWidth / 42;
-          marqueeOffset += (reverse ? speed : -speed) * delta;
-          if (marqueeOffset <= -loopWidth) marqueeOffset += loopWidth;
-          if (marqueeOffset >= loopWidth) marqueeOffset -= loopWidth;
-          track.style.transform = `translate3d(${marqueeOffset}px,0,0)`;
-        }
-      }
-
-      rafId = requestAnimationFrame(tick);
-    };
-
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [reverse, sectionRef]);
-
   return (
-    <div className="marquee-row overflow-hidden">
-      <div ref={parallaxRef} className="marquee-row__parallax">
-        <div ref={trackRef} className="marquee-row__track flex w-max gap-3">
-          {repeated.map((src, index) => (
-            <img
-              key={`${src}-${index}`}
-              src={src}
-              alt=""
-              width={420}
-              height={270}
-              loading={index < 6 ? "eager" : "lazy"}
-              decoding="async"
-              className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
-            />
-          ))}
-        </div>
-      </div>
+    <div
+      className="flex w-max gap-3"
+      style={{ transform: `translate3d(${x}px,0,0)`, willChange: "transform" }}
+    >
+      {repeated.map((src, index) => (
+        <img
+          key={`${src}-${index}`}
+          src={src}
+          alt=""
+          width={420}
+          height={270}
+          loading="lazy"
+          className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
+        />
+      ))}
     </div>
   );
 }

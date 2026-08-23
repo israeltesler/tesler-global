@@ -210,11 +210,6 @@
   font-weight: 900;
 }
 
-.marquee-row__parallax,
-.marquee-row__track {
-  will-change: transform;
-}
-
 .hero-footer-left {
   position: absolute;
   left: max(clamp(1rem, 3vw, 2.5rem), env(safe-area-inset-left, 0px));
