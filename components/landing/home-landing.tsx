@@ -604,10 +604,14 @@ function MarqueeStrip({
       if (!section) return;
       const sectionTop = section.getBoundingClientRect().top + window.scrollY;
       setOffset((window.scrollY - sectionTop + window.innerHeight) * 0.3);
-      rafId = requestAnimationFrame(update);
     };
 
-    rafId = requestAnimationFrame(update);
+    const loop = (): void => {
+      update();
+      rafId = requestAnimationFrame(loop);
+    };
+
+    rafId = requestAnimationFrame(loop);
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     return () => {
