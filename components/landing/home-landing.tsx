@@ -410,7 +410,7 @@ function HeroRisingHeadline({
       const globeCenterY = stageHeight * 0.5;
 
       setMotionConfig({
-        startX: window.innerWidth * 0.28,
+        startX: -(window.innerWidth * 0.28),
         startY: stageHeight * 0.2,
         maxWidth: globeDiameter * 0.7,
         anchorTop: (globeCenterY / stageHeight) * 100,
@@ -437,17 +437,20 @@ function HeroRisingHeadline({
     [motionConfig.startY, 0]
   );
   const scale = useTransform(progress, HERO_HEADLINE_SCROLL, [0.24, 1]);
-  const headlineOpacity = useTransform(progress, [0, 0.02], [0, 1]);
-  const totalCharacters = lines.reduce((count, line) => count + line.length, 0);
-  let runningCharIndex = 0;
-  const linesWithCharIndices = lines.map((line) => {
-    const characters = [...line].map((character, charInLine) => ({
-      character,
-      charInLine,
-      index: runningCharIndex++,
+  const totalWords = lines.reduce(
+    (count, line) => count + line.split(/\s+/).filter(Boolean).length,
+    0
+  );
+  let runningWordIndex = 0;
+  const linesWithWordIndices = lines.map((line) => {
+    const lineWords = line.split(/\s+/).filter(Boolean);
+    const words = lineWords.map((word, wordInLine) => ({
+      word,
+      wordInLine,
+      index: runningWordIndex++,
     }));
 
-    return { line, characters };
+    return { line, words };
   });
 
   return (
@@ -461,21 +464,20 @@ function HeroRisingHeadline({
           x,
           y,
           scale,
-          opacity: headlineOpacity,
           width: motionConfig.maxWidth,
-          transformOrigin: "100% 100%",
         }}
         aria-label={lines.join(" ")}
       >
-      {linesWithCharIndices.map(({ line, characters }) => (
+      {linesWithWordIndices.map(({ line, words }) => (
           <p key={line} className="hero-rising-headline__line">
-            {characters.map(({ character, charInLine, index }) => (
-              <HeroAnimatedCharacter
-                key={`${line}-${charInLine}-${character}`}
-                character={character}
+            {words.map(({ word, wordInLine, index }) => (
+              <HeroAnimatedWord
+                key={`${line}-${wordInLine}-${word}`}
+                word={word}
                 progress={progress}
                 index={index}
-                total={totalCharacters}
+                total={totalWords}
+                isLastInLine={wordInLine === words.length - 1}
               />
             ))}
           </p>
@@ -485,16 +487,18 @@ function HeroRisingHeadline({
   );
 }
 
-function HeroAnimatedCharacter({
-  character,
+function HeroAnimatedWord({
+  word,
   progress,
   index,
   total,
+  isLastInLine,
 }: {
-  character: string;
+  word: string;
   progress: MotionValue<number>;
   index: number;
   total: number;
+  isLastInLine: boolean;
 }): ReactNode {
   const [rangeStart, rangeEnd] = HERO_HEADLINE_SCROLL;
   const span = rangeEnd - rangeStart;
@@ -504,8 +508,9 @@ function HeroAnimatedCharacter({
   const y = useTransform(progress, [0, start, end], [18, 18, 0]);
 
   return (
-    <motion.span style={{ opacity, y }} className="hero-rising-headline__char">
-      {character}
+    <motion.span style={{ opacity, y }} className="hero-rising-headline__word">
+      {word}
+      {isLastInLine ? "" : "\u00A0"}
     </motion.span>
   );
 }
@@ -566,87 +571,57 @@ function MarqueeStrip({
 }: {
   sectionRef: RefObject<HTMLElement | null>;
 }): ReactNode {
-  const rowARef = useRef<HTMLDivElement>(null);
-  const rowBRef = useRef<HTMLDivElement>(null);
+  const [offset, setOffset] = useState(0);
 
   useEffect(() => {
-    let rafId = 0;
-
     const update = (): void => {
       const section = sectionRef.current;
-      if (section) {
-        const sectionTop =
-          section.getBoundingClientRect().top + window.scrollY;
-        const offset = (window.scrollY - sectionTop + window.innerHeight) * 0.3;
-        const parallaxA = offset - 200;
-        const parallaxB = -(offset - 200);
-
-        if (rowARef.current) {
-          rowARef.current.style.transform = `translate3d(${parallaxA}px,0,0)`;
-        }
-        if (rowBRef.current) {
-          rowBRef.current.style.transform = `translate3d(${parallaxB}px,0,0)`;
-        }
-      }
-      rafId = requestAnimationFrame(update);
+      if (!section) return;
+      const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+      setOffset((window.scrollY - sectionTop + window.innerHeight) * 0.3);
     };
-
-    rafId = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(rafId);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
   }, [sectionRef]);
 
   return (
     <>
-      <MarqueeRow
-        parallaxRef={rowARef}
-        images={MARQUEE_IMAGES.slice(0, 11)}
-        reverse={false}
-      />
+      <MarqueeRow images={MARQUEE_IMAGES.slice(0, 11)} x={offset - 200} />
       <div className="h-3" />
-      <MarqueeRow
-        parallaxRef={rowBRef}
-        images={MARQUEE_IMAGES.slice(11)}
-        reverse
-      />
+      <MarqueeRow images={MARQUEE_IMAGES.slice(11)} x={-(offset - 200)} />
     </>
   );
 }
 
 function MarqueeRow({
   images,
-  parallaxRef,
-  reverse = false,
+  x,
 }: {
   images: readonly string[];
-  parallaxRef: RefObject<HTMLDivElement | null>;
-  reverse?: boolean;
+  x: number;
 }): ReactNode {
   const repeated = [...images, ...images, ...images];
   return (
-    <div className="marquee-row overflow-hidden">
-      <div
-        ref={parallaxRef}
-        className="marquee-row__parallax"
-        style={{ willChange: "transform" }}
-      >
-        <div
-          className={`marquee-row__track flex w-max gap-3${reverse ? " marquee-row__track--reverse" : ""}`}
-        >
-          {repeated.map((src, index) => (
-            <img
-              key={`${src}-${index}`}
-              src={src}
-              alt=""
-              width={420}
-              height={270}
-              loading={index < 4 ? "eager" : "lazy"}
-              decoding="async"
-              fetchPriority={index < 2 ? "high" : undefined}
-              className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
-            />
-          ))}
-        </div>
-      </div>
+    <div
+      className="flex w-max gap-3"
+      style={{ transform: `translate3d(${x}px,0,0)`, willChange: "transform" }}
+    >
+      {repeated.map((src, index) => (
+        <img
+          key={`${src}-${index}`}
+          src={src}
+          alt=""
+          width={420}
+          height={270}
+          loading="lazy"
+          className="h-[190px] w-[296px] shrink-0 rounded-2xl object-cover sm:h-[230px] sm:w-[358px] md:h-[270px] md:w-[420px]"
+        />
+      ))}
     </div>
   );
 }
